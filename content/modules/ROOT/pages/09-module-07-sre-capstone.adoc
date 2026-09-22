@@ -1,0 +1,179 @@
+= Module 7: SRE Copilot Capstone
+:navtitle: SRE Copilot Capstone
+
+This optional extension uses a separately provisioned agent fleet and
+observability stack. Participants inject a payments outage, inspect specialist
+findings, test one policy boundary, and confirm the fixed remediation action.
+
+*Estimated time:* 45 minutes
+
+== The fleet design
+
+[cols="1,2,2",options="header"]
+|===
+| Agent | Allowed backend | Job
+
+| `logs`
+| Loki application logs
+| Find error lines and affected services.
+
+| `metrics`
+| Thanos / Prometheus
+| Quantify rates, saturation, and failing workloads.
+
+| `traces`
+| Tempo
+| Identify the failing request span.
+
+| `events`
+| Loki infrastructure stream
+| Read Kubernetes events and control-plane evidence.
+
+| `analyst`
+| No telemetry backend; registry access remains available
+| Combine findings and recommend a root cause and fix.
+|===
+
+The metrics and traces agents use different backend hosts. The logs and events
+agents share the Loki gateway host; their application-versus-infrastructure
+paths are selected by their tools and personas, not separated by host policy.
+The analyst has no telemetry-backend rule but retains the in-cluster registry
+rule used by the fleet runtime.
+
+== Extension prerequisites
+
+This module is available only when the facilitator has pre-provisioned the
+launchable, observability backends, fleet sandboxes, instrumented application,
+and separate OpenShell gateway. Obtain these values before starting:
+
+* `CAPSTONE_GATEWAY`: registered OpenShell gateway name;
+* `CAPSTONE_NAMESPACE`: fleet and workshop namespace; and
+* `CAPSTONE_URL`: incident-lab URL.
+
+== Exercise 1: Verify the fleet
+
+[source,bash,role="execute",subs="attributes+"]
+----
+: "${CAPSTONE_GATEWAY:?Facilitator must set CAPSTONE_GATEWAY}"
+: "${CAPSTONE_NAMESPACE:?Facilitator must set CAPSTONE_NAMESPACE}"
+: "${CAPSTONE_URL:?Facilitator must set CAPSTONE_URL}"
+openshell gateway select "$CAPSTONE_GATEWAY"
+oc get pods -n "$CAPSTONE_NAMESPACE"
+openshell sandbox list
+----
+
+Inspect one agent's effective policy and audit trail:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+openshell policy get metrics --full -o json
+openshell logs metrics --source sandbox
+----
+
+Pass condition: all five fleet sandboxes are ready, and the metrics policy
+contains the Thanos endpoint but not the Loki or Tempo endpoints.
+
+== Exercise 2: Test cross-backend denial
+
+Attempt to reach the Loki gateway from two sandboxes: the `logs` sandbox
+declares that host in its policy and the `metrics` sandbox does not. The paired
+requests isolate a policy denial from an unrelated endpoint failure. The Loki
+gateway serves plain HTTP on this port:
+
+[source,bash,role="execute"]
+----
+LOKI_URL="http://logging-loki-gateway-http.openshift-logging.svc.cluster.local:8080"
+
+if openshell sandbox exec -n logs -- \
+  curl -s -o /dev/null -w 'HTTP %\{http_code\}\n' --connect-timeout 5 --max-time 10 \
+  "$LOKI_URL/"; then
+  echo 'EXPECTED: the logs sandbox reached its declared Loki backend'
+else
+  echo 'ERROR: the declared backend was unreachable from the logs sandbox'
+  false
+fi
+
+if openshell sandbox exec -n metrics -- \
+  curl -s -o /dev/null -w 'HTTP %\{http_code\}\n' --connect-timeout 5 --max-time 10 \
+  "$LOKI_URL/"; then
+  echo 'ERROR: metrics reached an undeclared telemetry backend'
+  false
+else
+  echo 'Request failed; verify the Loki-host denial event'
+fi
+openshell logs metrics --since 30s
+----
+
+The `logs` request completes with an HTTP status even when the gateway answers
+401 without a bearer token; any HTTP response proves the policy allowed the
+connection. The `metrics` request fails before HTTP because the host is absent
+from that sandbox's policy; the gateway denial event is the required evidence.
+
+== Exercise 3: Investigate the payments outage
+
+Open `$CAPSTONE_URL` and complete the incident-lab workflow:
+
+. Deploy or reset the instrumented shop application and load generator.
+. Record the healthy payment replica count and baseline error rate.
+. Inject the payments outage and verify that the deployment scales to zero.
+. Run the fleet investigation.
+. Compare findings from at least two specialists with the analyst conclusion.
+. Inspect the proposed action before confirming it.
+. Confirm the remediation and verify that the payments deployment returns to
+  one ready replica and the error rate recovers.
+
+The fault scales the payments
+deployment to zero, the shop application produces real failures, and the
+specialists read metrics, logs, traces, and events from their individually
+allowed backends.
+
+The agents recommend; they do not receive Kubernetes write access. The incident
+application performs the fixed scale action after a browser confirmation. That
+confirmation is not durable, identity-bound approval evidence. A production
+workflow would need an authenticated approval record and a controlled delivery
+path such as a reviewed Git change reconciled by Argo CD.
+
+== Evidence to collect
+
+Capture:
+
+* The fleet status showing each sandbox is ready.
+* The effective policy for two agents with different egress.
+* An allow or deny decision in each relevant audit stream.
+* The telemetry findings from at least two specialists.
+* The analyst recommendation and the browser confirmation result.
+
+This evidence distinguishes policy-enforced backend access from persona-driven
+behavior and records the state transition produced by the incident workflow.
+
+== Evidence checkpoint
+
+For each artifact, identify the enforcement or ownership layer:
+
+* Per-agent network destination.
+* Per-binary access to a destination.
+* Per-user identity and workspace ownership.
+* Provider key storage and rotation.
+* Browser confirmation before the workshop remediation.
+
+.Answer key
+[%collapsible]
+====
+* Per-agent network destination: the per-sandbox OpenShell policy file, visible
+  with `policy get --full`.
+* Per-binary access: the `binaries` binding inside each policy endpoint.
+* Per-user identity and workspace ownership: the Keycloak OIDC identity and the
+  SAW workspace scope.
+* Provider key storage and rotation: Vault and External Secrets Operator,
+  gateway-side only; the sandbox never sees the key.
+* Browser confirmation: the incident UI, which is not durable,
+  identity-bound approval evidence; a production workflow needs an
+  authenticated approval record.
+====
+
+When the extension is complete, use the incident UI to remove the instrumented
+application. The facilitator must remove the fleet with its owning automation
+and verify that the separate gateway and observability stack are not shared
+before uninstalling them.
+
+Proceed to xref:11-cleanup.adoc[Cleanup].

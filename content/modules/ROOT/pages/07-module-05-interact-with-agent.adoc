@@ -1,0 +1,157 @@
+= Module 5: Test Agent Capabilities and Governance
+:navtitle: Test Agent Capabilities
+
+The agent is model-backed and running inside a SAW-provisioned NemoClaw
+OpenShell sandbox. In this module you will verify a permitted workspace action,
+test a denied filesystem action, inspect runtime evidence, and exercise a
+governance rejection.
+
+*Estimated time:* 25 minutes
+
+== Technical context
+
+Agent output is not enforcement evidence. Validate each result from outside the
+agent by inspecting the workspace, effective policy, and gateway events.
+
+Run the commands from `$HOME/git/{saw_repo_dir}` against the gateway configured
+in Module 4.
+
+== Exercise 1: Verify the permitted workspace action
+
+Confirm that the file created in Module 4 exists and inspect the effective
+filesystem policy:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+cd "$HOME/git/{saw_repo_dir}"
+openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} -- \
+  cat /sandbox/haiku.txt
+openshell --gateway {saw_gateway_name} policy get \
+  {saw_sandbox} --workspace {saw_workspace} --full
+----
+
+The successful write proves that `/sandbox` is usable. It does not by itself
+prove that paths outside the allowlist are denied.
+
+== Exercise 2: Test a denied filesystem action
+
+Attempt a write outside the declared workspace and then inspect recent events:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+if openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} -- \
+  touch /var/tmp/saw-boundary-probe; then
+  echo 'WARNING: the write succeeded; do not claim filesystem enforcement'
+  openshell --gateway {saw_gateway_name} sandbox exec \
+    -n {saw_sandbox} --workspace {saw_workspace} -- \
+    rm -f /var/tmp/saw-boundary-probe
+else
+  echo 'Write denied; verify the runtime event before attributing it to Landlock'
+fi
+openshell --gateway {saw_gateway_name} logs {saw_sandbox} \
+  --workspace {saw_workspace} --since 2m
+----
+
+Record whether the write was denied and whether the runtime reports Landlock as
+active. A Unix permission or SELinux denial is not equivalent evidence.
+
+== Exercise 3: Inspect managed capabilities
+
+Inspect the governance profiles vended by the interceptor:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+export OPENSHELL_SAW_NAME={saw_gateway_name}
+openshell --gateway "$OPENSHELL_SAW_NAME" provider list-profiles
+----
+
+The workshop checkout is read-only and the GitHub profile is already present, so
+do not run a helper that commits and pushes profile changes. Persistent changes
+require a writable fork tracked by Argo CD and a reviewed pull request.
+
+First verify that the authenticated profile-list operation succeeds. Then test
+that the interceptor rejects an unvended provider type:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+openshell --gateway "$OPENSHELL_SAW_NAME" provider list-profiles >/dev/null
+if OUTPUT=$(openshell --gateway "$OPENSHELL_SAW_NAME" provider create \
+  --name workshop-blocked --type custom --credential key=value 2>&1); then
+  echo 'ERROR: custom provider creation unexpectedly succeeded'
+  openshell --gateway "$OPENSHELL_SAW_NAME" provider delete workshop-blocked
+  false
+else
+  printf '%s\n' "$OUTPUT"
+  echo 'EXPECTED: authenticated request was rejected for an unvended type'
+fi
+----
+
+This verifies fail-closed governance for the intercepted `CreateProvider`
+operation. It does not imply that every operation in the VM traverses the
+interceptor.
+
+For lower-level live network activity and approval prompts, use the OpenShell
+TUI:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+openshell --gateway {saw_gateway_name} term --workspace {saw_workspace}
+----
+
+SAW governance profiles are the managed workflow; `openshell` is the lower-level
+inspection and live-approval workflow. The enforceable boundary remains the
+OpenShell policy, not an OpenClaw prompt or workspace file.
+
+== Optional: Validate browser Control UI prerequisites
+
+The current SAW Make target forwards the OpenClaw Control UI to localhost, but
+the deployed BOM may allow only the configured external origin. OpenClaw device
+pairing also remains enabled. Use the browser path only when the environment has
+been validated for both controls; do not disable device authentication to make
+the exercise pass.
+
+Inspect the configured origins and pending devices from inside the sandbox:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} -- \
+  openclaw config get gateway.controlUi.allowedOrigins
+openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} -- \
+  openclaw devices list --json
+----
+
+If the approved origin includes the URL used by the browser, start the native
+forward with `make nemoclaw-gui`. Treat its token-bearing URL as a credential.
+When the UI reports a pending device, approve only the displayed request ID with
+`openclaw devices approve <REQUEST_ID>` through `openshell sandbox exec`, then
+reload the page.
+
+== Evidence checkpoint
+
+Collect:
+
+* the effective filesystem policy;
+* the permitted workspace file;
+* the denied-path result and corresponding runtime event; and
+* the successful profile listing followed by the rejected provider creation.
+
+.Answer key
+[%collapsible]
+====
+* The effective filesystem policy shows the workspace allowlist; `/sandbox` is
+  writable and paths outside it are not declared.
+* The permitted workspace file exists and is non-empty (`test -s
+  /sandbox/haiku.txt`).
+* The denied-path write fails and the runtime event names the path and denial
+  source; a Unix permission or SELinux denial is not equivalent evidence.
+* The profile listing succeeds for the authenticated identity while the
+  unvended `custom` provider creation is rejected by the governance
+  interceptor (fail-closed).
+====
+
+Next, inspect the deployed architecture and governance controls in
+xref:08-module-06-secure-agent-workspace.adoc[Module 6: Secure Agent Workspace].

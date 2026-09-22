@@ -1,0 +1,79 @@
+= Module 3 (Optional): Install Secure Agent Workspace
+:navtitle: Optional SAW Installation
+
+This optional module installs Secure Agent Workspace (SAW) on the OpenShift
+cluster. Skip it when the facilitator provides an existing SAW environment and
+continue with xref:06-module-04-create-openclaw-agent.adoc[Module 4].
+
+include::secure-agent-workspace:ROOT:partial$deployment/scope.adoc[]
+
+The operational sections below are included from that fork's canonical
+deployment guide. Update the shared partials in the SAW repository when a
+deployment command changes; do not duplicate the procedure in this repository.
+
+*Estimated time:* 90-150 minutes, depending on operator installation, image
+imports, storage, and VM startup. Run this module as prework when class time is
+limited.
+
+== Deployment scope
+
+The raw harness and SAW deployment are separate environments. This installation
+adds a KubeVirt VM for the configured workspace owner, an OpenShell gateway and
+container runtime inside that VM, Keycloak OIDC, Vault and External Secrets, a
+governance interceptor, and GitOps-managed configuration.
+
+Use a dedicated workshop cluster. The pattern installs cluster-scoped operators
+and OpenShift Virtualization resources; its uninstall path can affect other
+virtualization workloads.
+
+== Learning objectives
+
+* Select a supported control node and verify OpenShift Virtualization capacity.
+* Prepare SAW SSH keys and provider secret values without committing credentials.
+* Mirror the required images and install the Validated Pattern.
+* Identify the installation stop condition and collect failure diagnostics.
+
+== Exercise 1: Prepare the control node
+
+Install and verify the control-node tooling first. The included partial installs
+the pinned OpenShell client and lists every dependency:
+
+include::secure-agent-workspace:ROOT:partial$deployment/control-node.adoc[]
+
+Then run the workshop preflight from the workshop repository root:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+make -C {automation_repo} prerequisites
+----
+
+include::secure-agent-workspace:ROOT:partial$deployment/cluster-prerequisites.adoc[]
+
+== Exercise 2: Generate keys and configure secrets
+
+include::secure-agent-workspace:ROOT:partial$deployment/clone-and-secrets.adoc[]
+
+== Exercise 3: Mirror images and install the pattern
+
+include::secure-agent-workspace:ROOT:partial$deployment/install.adoc[]
+
+== Installation stop condition
+
+Do not continue until the setup Job is `Complete` and the VM instance is
+`Running`:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+oc -n {saw_namespace} wait --for=condition=complete \
+  job/{saw_gateway_name}-setup --timeout=5400s
+test "$(oc -n {saw_namespace} get vmi {saw_gateway_name} \
+  -o jsonpath='{.status.phase}')" = "Running"
+----
+
+If either assertion fails, use the installation diagnostics before retrying:
+
+include::secure-agent-workspace:ROOT:partial$deployment/troubleshooting.adoc[]
+
+Continue to xref:06-module-04-create-openclaw-agent.adoc[Module 4: Validate and
+Operate Secure Agent Workspace]. That module is the common path for
+self-deployed and facilitator-provisioned environments.

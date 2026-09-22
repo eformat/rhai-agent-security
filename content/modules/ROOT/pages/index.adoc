@@ -1,0 +1,108 @@
+= Securing AI Agents on Red Hat AI
+:navtitle: Introduction
+
+From OpenShell to Secure Agent Workspace.
+
+This workshop examines how OpenShell and Secure Agent Workspace (SAW) constrain,
+operate, and troubleshoot AI agent runtimes on OpenShift. Participants deploy a
+raw OpenShell environment, test policy behavior, and then operate a
+SAW-provisioned NemoClaw/OpenClaw workspace.
+
+An agent that can use a shell, network, credentials, and external tools needs
+controls outside the model. The exercises focus on the resulting technical
+boundaries: runtime isolation, identity, capability policy, secret delivery,
+observable decisions, and controlled lifecycle changes.
+
+The workshop progresses through these tasks:
+
+. Deploy and inspect a basic OpenShell gateway and sandbox.
+. Deploy OpenClaw on the raw pod boundary and inspect its runtime.
+. Apply policy changes, test allowed and denied behavior, and correlate runtime
+  evidence.
+. Optionally install SAW with OpenShift Virtualization, OIDC, external secrets,
+  and GitOps governance.
+. Configure and validate an existing SAW deployment, regardless of who installed
+  it.
+. Run OpenClaw through the SAW NemoClaw path and inspect its effective controls.
+. Inspect identity, secret delivery, VM isolation, and GitOps ownership in the
+  deployed environment.
+. Optionally complete the separately provisioned SRE incident extension.
+. Optionally attempt the security CTF challenges against the raw track.
+
+== Learning objectives
+
+By the end of the workshop you will be able to:
+
+* Distinguish the OpenShell gateway, sandbox supervisor, and OpenClaw gateway.
+* Deploy, inspect, and troubleshoot an OpenShell sandbox on OpenShift.
+* Change network policy, verify L7 and binary constraints, and restore a known
+  policy revision.
+* Validate the VM, identity, secret, workspace, and GitOps resources in SAW.
+* Run OpenClaw through the SAW-managed NemoClaw path without exposing the
+  inference credential to the sandbox.
+* Collect evidence that supports or limits a security claim.
+
+== How to run the workshop
+
+Each exercise identifies the state to change, the evidence to inspect, and the
+result that must be verified. Do not treat command completion as proof. Compare
+the observed resource, policy, or event with the stated pass condition before
+continuing.
+
+== Workshop map
+
+[cols="1,3,1",options="header"]
+|===
+| Module | Outcome | Time
+
+| 1. Basic OpenShell
+| Deploy and operate the gateway, then create disposable base and OpenClaw sandboxes.
+| 40 min
+
+| 2. Policy and Security
+| Test allowed and blocked actions, then hot-reload a policy change.
+| 35 min
+
+| 3. Optional: Install Secure Agent Workspace
+| Install the SAW pattern and wait for the VM and setup Job.
+| 90-150 min optional
+
+| 4. Validate and Operate Secure Agent Workspace
+| Configure OIDC access, validate the deployed workspace, and run OpenClaw.
+| 35 min
+
+| 5. Interact with the Agent
+| Test permitted and rejected actions and inspect policy evidence.
+| 25 min
+
+| 6. Secure Agent Workspace
+| Inspect identity, secret delivery, VM isolation, and GitOps ownership.
+| 30 min
+
+| 7. SRE Copilot Capstone
+| Optional: investigate an incident with a separately provisioned agent fleet.
+| 45 min optional
+
+| 8. Optional: Security CTF
+| Apply every raw-track control layer against timed challenges.
+| 30 min optional
+|===
+
+*Estimated core total:* approximately 2 hours 45 minutes, excluding the
+optional SAW installation, SRE extension, and Security CTF.
+
+== Technical model
+
+OpenClaw gives an agent useful tools. OpenShell decides which tools and
+destinations it can actually use. Secure Agent Workspace adds an enterprise
+operating model around that boundary: identity, per-user isolation, secret
+delivery, GitOps policy, and auditable access.
+
+[quote]
+Capabilities are explicit, scoped, enforced outside the model, and visible to
+operators.
+
+== Start here
+
+Read xref:01-overview.adoc[Architecture and Control Boundaries], then verify the
+lab in xref:02-details.adoc[Prerequisites and Environment].
