@@ -168,6 +168,12 @@ deploy_http_echo() {
         --replicas=1
     oc -n "$ns" set resources deploy/http-echo \
         --requests=cpu=10m,memory=32Mi --limits=cpu=100m,memory=64Mi
+    oc -n "$ns" set volume deployment/http-echo \
+        --add --name=certs --type=emptyDir --mount-path=/certs
+    oc -n "$ns" set volume deployment/http-echo \
+        --add --name=nginx-tmp --type=emptyDir --mount-path=/var/lib/nginx
+    oc -n "$ns" set volume deployment/http-echo \
+        --add --name=var-run --type=emptyDir --mount-path=/var/run
     oc -n "$ns" expose deployment http-echo --port=8080 --target-port=8080
     oc -n "$ns" wait --for=condition=Available deployment/http-echo --timeout=120s
     info "http-echo available at http://http-echo.${ns}.svc.cluster.local:8080"
