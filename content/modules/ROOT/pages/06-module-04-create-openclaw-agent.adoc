@@ -75,6 +75,14 @@ OIDC. Configure the local CLI with the native SAW targets:
 
 include::secure-agent-workspace:ROOT:partial$deployment/configure-client.adoc[]
 
+The `make login` step opens the workshop Keycloak `openshell` realm in your
+browser, not your OpenShift login. The realm is seeded with test users; use
+`developer` / `developer` for the standard user path or `admin` / `admin`
+when a step requires the admin role. Self-registration is also enabled on
+the login page. The realm roles embedded in the issued token
+(`realm_access.roles`) are how the gateway identifies you; `make
+openshell-saw-configure-gateway` caches that token for the CLI.
+
 == Exercise 2: Validate the deployed workspace
 
 Confirm the infrastructure state before entering the agent sandbox:
