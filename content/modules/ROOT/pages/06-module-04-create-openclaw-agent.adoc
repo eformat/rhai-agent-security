@@ -52,14 +52,22 @@ production-shaped VM boundary with the runtime, OIDC, and secrets around it.
 The facilitator must provide these items for a pre-provisioned environment:
 
 * the SAW checkout at `$HOME/git/{saw_repo_dir}`;
-* an OIDC account that owns the assigned workspace;
+* an OIDC account whose subject a platform admin has added to the assigned
+  workspace with `workspace member add` (the setup Job does not grant
+  human-identity membership — see Exercise 1);
 * read access to `{saw_namespace}` and `{saw_gitops_namespace}`;
 * the generated SSH key required by the native configuration target; and
 * a completed setup Job and running VM.
 
 The SAW BOM and setup Job configure the agent image, inference routing,
 Vault-backed credentials, policy profiles, and sandbox lifecycle. Run all
-commands from `$HOME/git/{saw_repo_dir}`.
+commands from `$HOME/git/{saw_repo_dir}` on the control node — the machine
+holding the SAW SSH key and `virtctl`. A RHEL 10 or Fedora bastion is the
+supported control node; a macOS workstation with the same tools also works,
+and Windows participants use the validated WSL2 path. Nothing in this module
+runs inside the workspace VM directly: the RHEL guest is configured only by
+the setup Job over SSH from the cluster. The Keycloak browser login is the
+only environment-independent step.
 
 == Learning objectives
 
@@ -82,6 +90,33 @@ when a step requires the admin role. Self-registration is also enabled on
 the login page. The realm roles embedded in the issued token
 (`realm_access.roles`) are how the gateway identifies you; `make
 openshell-saw-configure-gateway` caches that token for the CLI.
+
+Workspace membership is not automatic for human identities. The SAW setup Job
+provisions workspaces and grants membership only to the in-VM
+`openshell-client` service identity, so your OIDC identity starts with no
+membership in `{saw_workspace}` or `default`. The first workspace-scoped CLI
+call fails with `not a member of workspace` and asks for a platform admin to
+add your subject. Note the `Subject:` value from `make whoami`, then grant
+yourself membership with the platform-admin identity:
+
+[source,bash,role="execute"]
+----
+openshell gateway select {saw_gateway_name}
+openshell gateway login {saw_gateway_name}
+openshell workspace member add \
+  --workspace {saw_workspace} \
+  --subject SUBJECT --role user
+openshell workspace member add \
+  --workspace default \
+  --subject SUBJECT --role user
+----
+
+Replace SUBJECT with the `Subject:` value from `make whoami`. When
+`gateway login` opens the browser, log in as `admin` / `admin`, run the two
+`member add` commands, then return to the `developer` identity with
+`make login OIDC_FLOW=browser`. In a facilitator-provisioned environment the
+facilitator performs this member add for each participant subject before the
+workshop starts.
 
 == Exercise 2: Validate the deployed workspace
 
