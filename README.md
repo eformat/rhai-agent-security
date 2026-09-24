@@ -2,11 +2,25 @@
 
 *From OpenShell to Secure Agent Workspace.*
 
-This Showroom workshop uses one OpenShift 4.22 cluster and combines the core
-OpenShell/NemoClaw path with three supporting experiences:
+This Showroom workshop uses one OpenShift 4.22 cluster and progresses from the
+raw OpenShell pod boundary to the production-shaped Secure Agent Workspace VM:
 
-* `automation/` contains the raw OpenShell harness and pinned policy used by
-  Modules 1 and 2.
+. Deploy and inspect a basic OpenShell gateway and sandbox on OpenShift.
+. Deploy OpenClaw on the raw pod boundary and identify its runtime boundary.
+. Test the OpenShell boundary: default-deny egress, L7 method control, binary
+   binding, and mandatory Landlock, each with runtime evidence.
+. Change policy live — allow a new endpoint, verify it works, restore, and
+   confirm the denial returns.
+. Act as platform admin and inspect what every sandbox attempted against the
+   gateway.
+. Optionally install Secure Agent Workspace (OpenShift Virtualization, OIDC,
+   Vault, GitOps), then validate and operate the deployed environment.
+. Run OpenClaw model-backed inside the SAW-managed NemoClaw sandbox, then test
+   permitted and rejected agent actions and governance.
+. Optionally close with the SRE incident fleet or the Security CTF.
+
+* `automation/` contains the raw OpenShell harness and pinned policies used by
+  the raw-track modules (1, 2, and the optional Security CTF).
 * `OpenShell` supplies the OpenShift Helm deployment, raw sandbox lifecycle, and
   default-deny/L7 policy exercises.
 * `NemoClaw` supplies the managed OpenClaw runtime and policy model. The

@@ -3,10 +3,10 @@
 
 The agent is model-backed and running inside a SAW-provisioned NemoClaw
 OpenShell sandbox. In this module you will verify a permitted workspace action,
-test a denied filesystem action, inspect runtime evidence, and exercise a
-governance rejection.
+test a denied filesystem action, inspect runtime evidence, exercise a
+governance rejection, and drive the agent from the browser Control UI.
 
-*Estimated time:* 25 minutes
+*Estimated time:* 30 minutes
 
 == Technical context
 
@@ -108,15 +108,50 @@ SAW governance profiles are the managed workflow; `openshell` is the lower-level
 inspection and live-approval workflow. The enforceable boundary remains the
 OpenShell policy, not an OpenClaw prompt or workspace file.
 
-== Optional: Validate browser Control UI prerequisites
+== Exercise 4: Drive the agent from the browser Control UI
 
-The current SAW Make target forwards the OpenClaw Control UI to localhost, but
-the deployed BOM may allow only the configured external origin. OpenClaw device
-pairing also remains enabled. Use the browser path only when the environment has
-been validated for both controls; do not disable device authentication to make
-the exercise pass.
+The OpenClaw Control UI is the agent's browser face: chat with the agent,
+watch tool activity live, and approve device pairings. The setup job wires
+the whole path — it starts the agent's gateway daemon inside the sandbox,
+configures the allowed browser origin from the dashboard Route, and installs
+a systemd unit on the gateway VM that forwards `{saw_gateway_name}-dashboard`
+route traffic into the sandbox with the gateway's native `openshell forward`
+RPC. The daemon binds loopback inside the sandbox, so the Route only works
+through that authenticated forward; no manual port plumbing is involved.
 
-Inspect the configured origin from inside the sandbox:
+Confirm the daemon is listening inside the sandbox, then acquire the UI
+token. The token authenticates the UI session and is a credential — treat
+the token-bearing URL like a password. The `openclaw` CLI redacts the token,
+so read it from the sandbox config file, the same method the shipped
+`openshell-saw-gui.sh` script uses:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} --no-tty -- \
+  sh -c 'ss -ltn | grep 18789 || echo "daemon not listening"'
+TOKEN=$(openshell --gateway {saw_gateway_name} sandbox exec \
+  -n {saw_sandbox} --workspace {saw_workspace} --no-tty -- \
+  cat /sandbox/.openclaw/openclaw.json 2>/dev/null \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('gateway',{}).get('auth',{}).get('token',''))")
+test -n "$TOKEN" && echo "token acquired"
+DASHBOARD_URL="https://$(oc get route {saw_gateway_name}-dashboard \
+  -n {saw_namespace} -o jsonpath='{.spec.host}')/#token=$TOKEN"
+echo "$DASHBOARD_URL"
+----
+
+Open the printed URL in a browser. The UI authenticates from the `#token=`
+fragment and lands in the chat session. Verify `Gateway status: Online` in
+the sidebar, then interact with the agent: use one of the suggested prompts
+(for example `Check system health`) or type your own request, and watch the
+assistant work with live tool activity. The prompts and session controls in
+the sidebar are the same object model you inspected through the CLI —
+sessions, devices, and gateway health are one system seen from two surfaces.
+
+Before trusting the UI, validate the two controls that gate it. First, the
+origin allowlist: the gateway only serves the Control UI to the browser
+origin configured in `gateway.controlUi.allowedOrigins` — the setup job sets
+it from the dashboard Route host:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
@@ -125,10 +160,14 @@ openshell --gateway {saw_gateway_name} sandbox exec \
   openclaw config get gateway.controlUi.allowedOrigins
 ----
 
-Each `openclaw` invocation takes roughly a minute on the emulated workspace VM,
-so use generous timeouts. `openclaw devices list --json` names pending devices,
-but the CLI keeps the device-pairing stream open and does not exit on its own;
-observe pairing requests through the OpenClaw gateway log instead:
+The value must be the URL you opened. Opening the UI from any other origin
+is rejected — do not widen the allowlist to make a broken path work.
+
+Second, device pairing. OpenClaw device pairing remains enabled. Each
+`openclaw` invocation takes roughly a minute on the emulated workspace VM,
+so use generous timeouts. `openclaw devices list --json` names pending
+devices, but the CLI keeps the device-pairing stream open and does not exit
+on its own; observe pairing requests through the gateway log instead:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
@@ -137,11 +176,18 @@ openshell --gateway {saw_gateway_name} sandbox exec \
   sh -c 'grep device.pair /tmp/openclaw-gateway.log | tail -5'
 ----
 
-If the approved origin includes the URL used by the browser, start the native
-forward with `make nemoclaw-gui`. Treat its token-bearing URL as a credential.
-When the UI reports a pending device, approve only the displayed request ID with
-`openclaw devices approve <REQUEST_ID>` through `openshell sandbox exec`, then
-reload the page.
+When the UI reports a pending device, approve only the displayed request ID
+with `openclaw devices approve <REQUEST_ID>` through `openshell sandbox
+exec`, then reload the page.
+
+Other sandboxes on the same gateway VM are not forwarded — the VM exposes a
+single UI port. Use the shipped tunnel for those, with explicit names:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+SANDBOX_NAME=<name> WORKSPACE=<workspace> GATEWAY_NAME={saw_gateway_name} \
+  ./scripts/openshell-saw-gui.sh
+----
 
 == Evidence checkpoint
 
@@ -149,8 +195,12 @@ Collect:
 
 * the effective filesystem policy;
 * the permitted workspace file;
-* the denied-path result and corresponding runtime event; and
-* the successful profile listing followed by the rejected provider creation.
+* the denied-path result and corresponding runtime event;
+* the successful profile listing followed by the rejected provider creation;
+* the Control UI showing `Gateway status: Online` with a completed agent
+  interaction; and
+* the device-pairing evidence from the gateway log (and the approval record,
+  if a pairing was exercised).
 
 .Answer key
 [%collapsible]
@@ -164,6 +214,9 @@ Collect:
 * The profile listing succeeds for the authenticated identity while the
   unvended `custom` provider creation is rejected by the governance
   interceptor (fail-closed).
+* The Control UI loads from the dashboard Route with the token fragment, shows
+  `Gateway status: Online`, and completes an agent interaction; the origin
+  allowlist value matches the URL used.
 ====
 
 Next, inspect the deployed architecture and governance controls in

@@ -76,7 +76,7 @@ runtime boundary, and OpenShell governs what the agent can do within it.
 
 | Governance | Sandbox policy and gateway audit | Git-reviewed profiles and fail-closed checks on configured interceptor RPC bindings
 
-| Access | Local port-forward | TLS gateway Route plus token-protected dashboard access
+| Access | Local port-forward | TLS dashboard Route with token-protected Control UI, forwarded by the gateway's authenticated ssh-proxy; local tunnel for non-forwarded sandboxes
 |===
 
 The evaluation path and SAW are intentionally different deployment layers.
