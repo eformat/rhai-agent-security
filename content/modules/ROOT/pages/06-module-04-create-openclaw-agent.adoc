@@ -124,7 +124,6 @@ Confirm the infrastructure state before entering the agent sandbox:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
-cd "$HOME/git/{saw_repo_dir}"
 test "$(oc -n {saw_namespace} get job/{saw_gateway_name}-setup \
   -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')" = "True"
 test "$(oc -n {saw_namespace} get vmi/{saw_gateway_name} \
@@ -206,7 +205,7 @@ After the file is created, exit the TUI or use a second terminal to verify it:
 ----
 openshell --gateway {saw_gateway_name} sandbox exec \
   -n {saw_sandbox} --workspace {saw_workspace} -- \
-  test -s /sandbox/haiku.txt
+  sh -c 'test -s /sandbox/haiku.txt && cat /sandbox/haiku.txt'
 ----
 
 The reason for using the SAW-managed path is lifecycle control. If the agent

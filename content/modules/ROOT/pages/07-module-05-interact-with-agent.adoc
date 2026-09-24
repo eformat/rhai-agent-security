@@ -13,17 +13,16 @@ governance rejection.
 Agent output is not enforcement evidence. Validate each result from outside the
 agent by inspecting the workspace, effective policy, and gateway events.
 
-Run the commands from `$HOME/git/{saw_repo_dir}` against the gateway configured
+Run the commands from `{saw_repo_dir}` against the gateway configured
 in Module 4.
 
 == Exercise 1: Verify the permitted workspace action
 
-Confirm that the file created in Module 4 exists and inspect the effective
+Confirm again that the file created in Module 4 exists and inspect the effective
 filesystem policy:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
-cd "$HOME/git/{saw_repo_dir}"
 openshell --gateway {saw_gateway_name} sandbox exec \
   -n {saw_sandbox} --workspace {saw_workspace} -- \
   cat /sandbox/haiku.txt
@@ -48,14 +47,19 @@ if openshell --gateway {saw_gateway_name} sandbox exec \
     -n {saw_sandbox} --workspace {saw_workspace} -- \
     rm -f /var/tmp/saw-boundary-probe
 else
-  echo 'Write denied; verify the runtime event before attributing it to Landlock'
+  echo 'Write denied outside the Landlock allowlist'
 fi
 openshell --gateway {saw_gateway_name} logs {saw_sandbox} \
   --workspace {saw_workspace} --since 2m
 ----
 
-Record whether the write was denied and whether the runtime reports Landlock as
-active. A Unix permission or SELinux denial is not equivalent evidence.
+Attribute the denial to Landlock, not to a Unix permission or SELinux denial:
+the probed directory is world-writable (mode 1777), so plain permissions cannot
+deny the sandbox user there, and the successful `/sandbox` write from Exercise 1
+confirms the allowlist is what differentiates. Landlock filesystem denials are
+kernel-silent — the kernel returns EACCES with no notification, so the log
+query above shows only control-plane noise and no denial runtime event. The
+failing `touch` itself is the evidence.
 
 == Exercise 3: Inspect managed capabilities
 
@@ -112,16 +116,25 @@ pairing also remains enabled. Use the browser path only when the environment has
 been validated for both controls; do not disable device authentication to make
 the exercise pass.
 
-Inspect the configured origins and pending devices from inside the sandbox:
+Inspect the configured origin from inside the sandbox:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
 openshell --gateway {saw_gateway_name} sandbox exec \
   -n {saw_sandbox} --workspace {saw_workspace} -- \
   openclaw config get gateway.controlUi.allowedOrigins
+----
+
+Each `openclaw` invocation takes roughly a minute on the emulated workspace VM,
+so use generous timeouts. `openclaw devices list --json` names pending devices,
+but the CLI keeps the device-pairing stream open and does not exit on its own;
+observe pairing requests through the OpenClaw gateway log instead:
+
+[source,bash,role="execute",subs="attributes+"]
+----
 openshell --gateway {saw_gateway_name} sandbox exec \
   -n {saw_sandbox} --workspace {saw_workspace} -- \
-  openclaw devices list --json
+  sh -c 'grep device.pair /tmp/openclaw-gateway.log | tail -5'
 ----
 
 If the approved origin includes the URL used by the browser, start the native

@@ -347,6 +347,14 @@ If sandbox creation fails, inspect the reported Landlock availability instead
 of weakening the policy. The successful `/tmp` control distinguishes a general
 write failure from the denied path test.
 
+Attribute the denied write to Landlock, not to ordinary permissions, by
+checking both sides: the probed directory is world-writable (mode 1777), so
+plain permissions cannot deny the sandbox user there, and the allowed-path
+control succeeds. Unlike network denials, which the enforcement proxy records
+as `NET:OPEN DENIED` runtime events, Landlock filesystem denials are
+kernel-silent — the kernel returns EACCES with no notification, so no runtime
+event appears in `openshell logs`. The failing `touch` itself is the evidence.
+
 == Optional: Run the automated control-layer test
 
 The repository ships an automated test that verifies every control layer
