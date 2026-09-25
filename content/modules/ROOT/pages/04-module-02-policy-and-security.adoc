@@ -109,7 +109,7 @@ STATUS=$(openshell --gateway {raw_gateway_name} sandbox exec -n {raw_sandbox_nam
   curl -sS --connect-timeout 10 --max-time 30 \
   -o /dev/null -w '%\{http_code\}' \
   https://api.github.com/repos/NVIDIA/OpenShell)
-printf 'GitHub API HTTP %s\n' "$STATUS"
+echo -e "$GREEN GitHub API HTTP $STATUS$NC"
 if [ "$STATUS" = "403" ]; then
   RATE_LIMIT=$(openshell --gateway {raw_gateway_name} sandbox exec -n {raw_sandbox_name} -- \
     curl -sI --connect-timeout 10 --max-time 30 \
