@@ -64,7 +64,10 @@ oc -n {openshell_namespace} port-forward svc/openshell 8080:8080 \
   >"$HOME/openshell-port-forward.log" 2>&1 &
 echo $! >"$HOME/openshell-port-forward.pid"
 sleep 2
+----
 
+[source,bash,role="execute",subs="attributes+"]
+----
 openshell gateway remove {raw_gateway_name} 2>/dev/null || true
 openshell gateway add "http://127.0.0.1:8080" --local --name {raw_gateway_name}
 openshell gateway select {raw_gateway_name}
