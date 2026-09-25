@@ -44,6 +44,24 @@ make -C automation openshell-security-test
 This path intentionally uses the harness's plaintext, unauthenticated lab
 configuration. It is not the production security posture.
 
+== NeMo Guardrails chart
+
+`charts/nemo-guardrails` is the Helm chart that Module 8 installs. It deploys
+a NeMo Guardrails server on OpenShift AI via the TrustyAI operator from a
+`NemoGuardrails` custom resource, with the guardrails configuration rendered
+into a ConfigMap and the model API key supplied by the participant at install
+time (never committed to values):
+
+[source,bash]
+----
+helm install nemo-guardrails automation/charts/nemo-guardrails \
+  -n guardrails --create-namespace \
+  --set llm.apiKey="$LLM_API_KEY"
+----
+
+The chart's README documents the Llama Guard remote moderation wiring, the
+optional on-cluster content safety detector, and the API key handling.
+
 == Update the pinned baseline
 
 The OpenShell version and the default sandbox image digest are pinned in

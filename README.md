@@ -18,9 +18,15 @@ raw OpenShell pod boundary to the production-shaped Secure Agent Workspace VM:
 . Run OpenClaw model-backed inside the SAW-managed NemoClaw sandbox, then test
    permitted and rejected agent actions and governance.
 . Optionally close with the SRE incident fleet or the Security CTF.
+. Add model-boundary guardrails: deploy a NeMo Guardrails server with the
+   TrustyAI operator, prove rails block sensitive input before the model, wire
+   a client application, and change a rail live.
 
 * `automation/` contains the raw OpenShell harness and pinned policies used by
   the raw-track modules (1, 2, and the optional Security CTF).
+* `automation/charts/nemo-guardrails` is the Helm chart Module 8 installs: it
+  deploys the guardrails server via the TrustyAI operator with a
+  user-supplied model API key.
 * `OpenShell` supplies the OpenShift Helm deployment, raw sandbox lifecycle, and
   default-deny/L7 policy exercises.
 * `NemoClaw` supplies the managed OpenClaw runtime and policy model. The

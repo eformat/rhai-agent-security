@@ -76,15 +76,21 @@
   unless the environment records and retains such an event.
 |===
 
-== Optional model-boundary extension
+== Model-boundary extension
 
-NVIDIA NeMo Guardrails can be added at the application or model boundary to
-inspect inputs and outputs. It complements OpenShell; it does not replace the
-sandbox. OpenShell limits what the agent can execute, while application-level
-guardrails can limit what the model receives or returns.
+NVIDIA NeMo Guardrails adds guardrails at the application or model boundary.
+It complements OpenShell; it does not replace the sandbox. OpenShell limits
+what the agent can execute, while application-level guardrails limit what the
+model receives or returns.
 
-Treat this as a separate integration. It is not installed or exercised by this
-workshop and must not be included in workshop completion claims.
+Module 8 installs and exercises this integration:
+xref:13-module-08-model-boundary-guardrails.adoc[Module 8: Model-Boundary
+Guardrails] deploys the guardrails server with the TrustyAI operator, tests
+rails through the OpenAI-compatible API, probes rails in isolation, and wires
+a client application. The `nemo-guardrails` chart lives in
+`automation/charts/nemo-guardrails`. The guardrails boundary is not part of
+the OpenShell sandbox claims above; its pass conditions are stated in Module
+8 and verified there.
 
 == Workshop evidence bundle
 
