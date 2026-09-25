@@ -80,7 +80,15 @@ binary, and denial reason.
 
 == Exercise 2: Apply the read-only policy
 
-Apply the workshop's bundled copy of the OpenShell read-only policy:
+Inspect the workshop's bundled copy of the OpenShell read-only policy before
+applying it:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+cat {automation_repo}/policies/sandbox-policy-quickstart.yaml
+----
+
+Apply the read-only policy:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
@@ -330,8 +338,16 @@ else
 fi
 ----
 
-Filesystem policy is static for a running sandbox. Create a separate sandbox
-whose startup must fail if Landlock cannot enforce the declared paths:
+Filesystem policy is static for a running sandbox. Inspect the `hard_requirement`
+policy before creating the sandbox:
+
+[source,bash,role="execute",subs="attributes+"]
+----
+cat {automation_repo}/policies/sandbox-policy-landlock-hard.yaml
+----
+
+Create a separate sandbox whose startup must fail if Landlock cannot enforce
+the declared paths:
 
 [source,bash,role="execute",subs="attributes+"]
 ----
