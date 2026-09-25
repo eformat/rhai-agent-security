@@ -32,4 +32,7 @@ asciidoc:
     saw_sandbox: 'cuda-sandbox'
     # --- Source repo for manifests ---
     repo-url: "https://github.com/taylorjordanNC/rhai-agent-security"
-
+    guardrails_namespace: 'guardrails'
+    guardrails_name: 'nemo-guardrails'
+    llm_base_url: 'https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/glm-53-flash/v1'
+    llm_model_name: 'glm-53-flash'

@@ -83,7 +83,11 @@ continuing.
 | Optional: investigate an incident with a separately provisioned agent fleet.
 | 45 min optional
 
-| 8. Optional: Security CTF
+| 8. Model-Boundary Guardrails
+| Deploy a NeMo Guardrails server, prove rails block sensitive input, and wire a client application.
+| 60 min
+
+| 9. Optional: Security CTF
 | Apply every raw-track control layer against timed challenges.
 | 30 min optional
 |===
