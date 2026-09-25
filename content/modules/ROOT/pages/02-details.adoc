@@ -77,8 +77,8 @@ The Kustomize manifests referenced throughout this guide live in the workshop re
 
 [source,bash,role="execute",subs="attributes"]
 ----
-git clone {saw_repo_url} ~/secure-agent-workspace
-cd ~/secure-agent-workspace
+git clone {repo-url} ~/rhai-agent-security
+cd ~/rhai-agent-security
 ls automation
 ----
 

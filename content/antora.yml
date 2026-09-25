@@ -30,3 +30,6 @@ asciidoc:
     saw_gateway_name: 'openshell-saw'
     saw_workspace: 'cuda-dev'
     saw_sandbox: 'cuda-sandbox'
+    # --- Source repo for manifests ---
+    repo-url: "https://github.com/taylorjordanNC/rhai-agent-security"
+
