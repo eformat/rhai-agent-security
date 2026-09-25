@@ -71,6 +71,17 @@ pinned to `{openshell_saw_version}` in the guest VM. Its Makefile targets
 configure the gateway, select a workspace, and connect to the sandbox. They do
 not use `nemoclaw onboard` on the participant workstation.
 
+== Clone the workshop manifests
+
+The Kustomize manifests referenced throughout this guide live in the workshop repository.
+
+[source,bash,role="execute",subs="attributes"]
+----
+git clone {saw_repo_url} ~/secure-agent-workspace
+cd ~/secure-agent-workspace
+ls automation
+----
+
 == Install the command-line tools
 
 Install `oc` from the OpenShift console's client download page or the
